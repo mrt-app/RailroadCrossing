@@ -28,7 +28,23 @@ export class SoundEngine {
   private bufferSoftWhistle: AudioBuffer | null = null;
 
   constructor() {
-    // Lazy initialized on first user gesture
+    this.attachUserGestureUnlock();
+  }
+
+  public attachUserGestureUnlock(): void {
+    const unlock = () => {
+      this.init();
+      if (this.ctx && this.ctx.state === 'running') {
+        window.removeEventListener('touchstart', unlock);
+        window.removeEventListener('touchend', unlock);
+        window.removeEventListener('pointerdown', unlock);
+        window.removeEventListener('click', unlock);
+      }
+    };
+    window.addEventListener('touchstart', unlock, { passive: true });
+    window.addEventListener('touchend', unlock, { passive: true });
+    window.addEventListener('pointerdown', unlock, { passive: true });
+    window.addEventListener('click', unlock, { passive: true });
   }
 
   public init(): void {
@@ -42,8 +58,21 @@ export class SoundEngine {
 
       this.preRenderAllAudioBuffers();
     }
+
     if (this.ctx.state === 'suspended') {
       this.ctx.resume();
+    }
+
+    // Crucial for iOS / iPadOS Safari:
+    // Playing a silent buffer synchronously on user gesture awakens CoreAudio hardware output
+    try {
+      const unlockBuffer = this.ctx.createBuffer(1, 1, 22050);
+      const unlockSource = this.ctx.createBufferSource();
+      unlockSource.buffer = unlockBuffer;
+      unlockSource.connect(this.ctx.destination);
+      unlockSource.start(0);
+    } catch {
+      // Ignore unlock buffer errors if any
     }
   }
 
