@@ -48,10 +48,12 @@ export class InteractionManager {
 
   private setupListeners(): void {
     const handleTap = (clientX: number, clientY: number, target: EventTarget | null) => {
-      // If tapped on UI element, don't raycast
+      // If tapped on UI button, don't raycast
       if (target && ((target as HTMLElement).closest('button') || (target as HTMLElement).closest('.start-overlay'))) {
         return;
       }
+
+      this.soundEngine.init();
 
       this.pointer.x = (clientX / window.innerWidth) * 2 - 1;
       this.pointer.y = -(clientY / window.innerHeight) * 2 + 1;
@@ -75,7 +77,7 @@ export class InteractionManager {
         return;
       }
 
-      // 2. Check Crossing clickable meshes
+      // 2. Check Crossing specific meshes (warning lights, signs, barriers)
       const crossingIntersects = this.raycaster.intersectObjects(this.crossingModel.clickableMeshes, true);
       if (crossingIntersects.length > 0) {
         this.createTapEffect(clientX, clientY, '⭐');
@@ -87,40 +89,45 @@ export class InteractionManager {
         return;
       }
 
-      // 3. Check Road meshes
-      const roadIntersects = this.raycaster.intersectObjects(this.envModel.roadMeshes, true);
-      if (roadIntersects.length > 0) {
-        const hitPoint = roadIntersects[0].point;
-        const preferDirection = (hitPoint.z > 0) ? 1 : -1;
+      // 3. Check All Environment (Terrain, Tracks, Roads, Crossing Precinct)
+      const allIntersects = this.raycaster.intersectObjects([this.envModel.group, this.crossingModel.group], true);
+      if (allIntersects.length > 0) {
+        const pt = allIntersects[0].point;
 
-        this.createTapEffect(clientX, clientY, '✨');
-        this.soundEngine.playTapSound();
-        const car = this.trafficManager.spawnVehicle(preferDirection);
-        if (car) {
-          const name = this.trafficManager.getVehicleDisplayName(car.type);
-          this.showGuideMessage(`${name} が きたよ！`);
-        }
-        return;
-      }
-
-      // 4. If tapped anywhere near crossing zone
-      const allEnvIntersects = this.raycaster.intersectObject(this.envModel.group, true);
-      if (allEnvIntersects.length > 0) {
-        const pt = allEnvIntersects[0].point;
-        if (Math.abs(pt.x) < 8 && Math.abs(pt.z) < 8) {
+        // 🌟 踏切構内ゾーン判定 (X: ±9.0m, Z: ±6.8m の広大な踏切・線路交差エリア全域)
+        // 踏切の遮断機の内側、線路、道路の交差部、踏板、警報機周辺など「踏切構内」のタップはすべて踏切として作動！
+        if (Math.abs(pt.x) <= 9.0 && Math.abs(pt.z) <= 6.8) {
           this.createTapEffect(clientX, clientY, '⚠️');
           this.soundEngine.playTapSound();
-          this.crossingController.triggerCrossingSequence();
-          this.showGuideMessage('カンカンカン！ふみきり スタート！🚊');
-        } else if (Math.abs(pt.x) < 10) {
-          this.createTapEffect(clientX, clientY, '🚙');
+          const started = this.crossingController.triggerCrossingSequence();
+          if (started) {
+            this.showGuideMessage('カンカンカン！でんしゃが くるよ！🚃');
+          } else {
+            this.showGuideMessage('ふみきり ちゅうい！まもなく でんしゃ が きます！');
+          }
+          return;
+        }
+
+        // 🚗 踏切の外側の道路タップ (Z > 6.8 または Z < -6.8)
+        if (Math.abs(pt.x) <= 5.8) {
+          this.createTapEffect(clientX, clientY, '✨');
           this.soundEngine.playTapSound();
-          const preferDir = (pt.z > 0) ? 1 : -1;
-          const car = this.trafficManager.spawnVehicle(preferDir);
+          const preferDirection = (pt.z > 0) ? 1 : -1;
+          const car = this.trafficManager.spawnVehicle(preferDirection);
           if (car) {
             const name = this.trafficManager.getVehicleDisplayName(car.type);
-            this.showGuideMessage(`${name} が はしるよ！`);
+            this.showGuideMessage(`${name} が きたよ！🚗`);
           }
+          return;
+        }
+
+        // 線路の遠くをタップした場合も電車・踏切を作動
+        if (Math.abs(pt.z) <= 4.0) {
+          this.createTapEffect(clientX, clientY, '🚊');
+          this.soundEngine.playTapSound();
+          this.crossingController.triggerCrossingSequence();
+          this.showGuideMessage('カンカンカン！でんしゃ が はしるよ！');
+          return;
         }
       }
     };

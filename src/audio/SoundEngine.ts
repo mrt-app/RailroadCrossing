@@ -27,13 +27,29 @@ export class SoundEngine {
   private bufferMusicHorn: AudioBuffer | null = null;
   private bufferSoftWhistle: AudioBuffer | null = null;
 
+  private html5UnlockAudio: HTMLAudioElement | null = null;
+
   constructor() {
     this.attachUserGestureUnlock();
   }
 
   public attachUserGestureUnlock(): void {
     const unlock = () => {
+      // 1. HTML5 Audio unlock for iOS / iPadOS Safari (Forces audio session to Media Playback category)
+      try {
+        if (!this.html5UnlockAudio) {
+          const silentWav = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA';
+          this.html5UnlockAudio = new Audio(silentWav);
+          this.html5UnlockAudio.volume = 0.01;
+        }
+        this.html5UnlockAudio.play().catch(() => {});
+      } catch {
+        // Ignore
+      }
+
+      // 2. Web Audio CoreAudio unlock
       this.init();
+
       if (this.ctx && this.ctx.state === 'running') {
         window.removeEventListener('touchstart', unlock);
         window.removeEventListener('touchend', unlock);
@@ -41,6 +57,7 @@ export class SoundEngine {
         window.removeEventListener('click', unlock);
       }
     };
+
     window.addEventListener('touchstart', unlock, { passive: true });
     window.addEventListener('touchend', unlock, { passive: true });
     window.addEventListener('pointerdown', unlock, { passive: true });
@@ -60,7 +77,7 @@ export class SoundEngine {
     }
 
     if (this.ctx.state === 'suspended') {
-      this.ctx.resume();
+      this.ctx.resume().catch(() => {});
     }
 
     // Crucial for iOS / iPadOS Safari:
