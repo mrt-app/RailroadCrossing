@@ -40,12 +40,16 @@ export class UIManager {
     const btnStart = document.getElementById('btn-start');
     const startOverlay = document.getElementById('start-overlay');
     if (btnStart && startOverlay) {
-      btnStart.addEventListener('click', () => {
+      const handleStart = () => {
         this.soundEngine.init();
         this.soundEngine.playTapSound();
         startOverlay.classList.add('hidden');
         this.interactionManager.showGuideMessage('ようこそ！ふみきり や どうろ を タップしてみてね！');
-      });
+      };
+
+      btnStart.addEventListener('click', handleStart);
+      btnStart.addEventListener('pointerdown', handleStart);
+      btnStart.addEventListener('touchend', handleStart);
     }
 
     // 2. Train Action Button
