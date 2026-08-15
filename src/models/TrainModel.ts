@@ -114,21 +114,35 @@ export class TrainModel {
   public headLights: THREE.PointLight[] = [];
   public windowMeshes: THREE.Mesh[] = [];
 
-  constructor(type: TrainType = 'yamanote', direction: number = 1) {
+  constructor(type: TrainType = 'yamanote', direction: number = 1, numCars: number = 2) {
     this.group = new THREE.Group();
     const theme = TRAIN_THEMES[type];
 
-    const carLength = 13.6;
+    const carLength = numCars === 2 ? 8.6 : 11.0;
     const carWidth = 2.55;
     const carHeight = 2.6;
-    const carGap = 0.5;
+    const carGap = 0.4;
 
     if (theme.category === 'freight') {
-      this.buildFreightFormation(carLength, carWidth, carHeight, carGap, direction);
+      this.buildFreightFormation(10.0, carWidth, carHeight, carGap, direction);
+      this.totalLength = 10.0 * 3 + carGap * 2;
     } else if (theme.category === 'steam') {
-      this.buildSteamFormation(carLength, carWidth, carHeight, carGap, direction);
+      this.buildSteamFormation(9.0, carWidth, carHeight, carGap, direction);
+      this.totalLength = 9.0 * 3 + carGap * 2;
+    } else if (numCars === 2) {
+      // 2-car formation (Local train stopping neatly at the station)
+      const leadCar = this.createCar(theme, carLength, carWidth, carHeight, 'lead', direction);
+      leadCar.position.x = (carLength + carGap) * 0.5 * direction;
+      this.group.add(leadCar);
+
+      const tailCar = this.createCar(theme, carLength, carWidth, carHeight, 'tail', direction);
+      tailCar.position.x = -(carLength + carGap) * 0.5 * direction;
+      this.group.add(tailCar);
+
+      this.createGangway(0, carWidth, carHeight);
+      this.totalLength = (carLength + carGap) * 2;
     } else {
-      // 3-car standard formation
+      // 3-car formation (Shinkansen / Express through-trains)
       const leadCar = this.createCar(theme, carLength, carWidth, carHeight, 'lead', direction);
       leadCar.position.x = (carLength + carGap) * direction;
       this.group.add(leadCar);
@@ -143,9 +157,8 @@ export class TrainModel {
 
       this.createGangway((carLength + carGap) * direction * 0.5, carWidth, carHeight);
       this.createGangway(-(carLength + carGap) * direction * 0.5, carWidth, carHeight);
+      this.totalLength = (carLength + carGap) * 3;
     }
-
-    this.totalLength = (carLength + carGap) * 3;
   }
 
   private createCar(

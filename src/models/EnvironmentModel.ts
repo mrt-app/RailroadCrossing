@@ -337,9 +337,9 @@ export class EnvironmentModel {
     // Low-poly Town Trees placed around crossing
     const treePositions = [
       { x: -11, z: -10 }, { x: -16, z: -12 },
-      { x: -10, z: 10 }, { x: -15, z: 12 },
-      { x: 12, z: 11 }, { x: 18, z: 13 },
-      { x: -22, z: 5 }, { x: -24, z: -6 }
+      { x: -18, z: 14 },  { x: -22, z: 12 },
+      { x: 12, z: 11 },   { x: 18, z: 13 },
+      { x: -22, z: 5 },   { x: -24, z: -6 }
     ];
 
     treePositions.forEach((pos, index) => {

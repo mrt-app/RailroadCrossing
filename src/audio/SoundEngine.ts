@@ -479,4 +479,109 @@ export class SoundEngine {
     osc.start(now);
     osc.stop(now + 0.1);
   }
+
+  public playStationBrakeSound(): void {
+    if (!this.ctx || !this.masterGain || this.isMuted) return;
+    this.init();
+    const now = this.ctx.currentTime;
+    const bufferSize = Math.floor(this.ctx.sampleRate * 0.8);
+    const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+      data[i] = Math.random() * 2 - 1;
+    }
+
+    const noise = this.ctx.createBufferSource();
+    noise.buffer = buffer;
+
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.setValueAtTime(1400, now);
+    filter.frequency.exponentialRampToValueAtTime(450, now + 0.75);
+    filter.Q.setValueAtTime(2.5, now);
+
+    const gain = this.ctx.createGain();
+    gain.gain.setValueAtTime(0.001, now);
+    gain.gain.linearRampToValueAtTime(0.07, now + 0.08);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.75);
+
+    noise.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.masterGain);
+
+    noise.start(now);
+    noise.stop(now + 0.8);
+  }
+
+  public playStationDepartureMelody(): void {
+    if (!this.ctx || !this.masterGain || this.isMuted) return;
+    this.init();
+    const notes = [
+      { freq: 659.25, time: 0, dur: 0.20 },    // E5
+      { freq: 830.61, time: 0.22, dur: 0.20 }, // G#5
+      { freq: 987.77, time: 0.44, dur: 0.20 }, // B5
+      { freq: 1318.51, time: 0.66, dur: 0.42 } // E6
+    ];
+
+    const now = this.ctx.currentTime;
+    notes.forEach(n => {
+      const osc = this.ctx!.createOscillator();
+      const gain = this.ctx!.createGain();
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(n.freq, now + n.time);
+
+      gain.gain.setValueAtTime(0.001, now + n.time);
+      gain.gain.linearRampToValueAtTime(0.08, now + n.time + 0.03);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + n.time + n.dur);
+
+      osc.connect(gain);
+      gain.connect(this.masterGain!);
+
+      osc.start(now + n.time);
+      osc.stop(now + n.time + n.dur + 0.05);
+    });
+  }
+
+  public playDogBark(): void {
+    if (!this.ctx || !this.masterGain || this.isMuted) return;
+    this.init();
+    const now = this.ctx.currentTime;
+
+    const barks = [0, 0.16];
+    barks.forEach(offset => {
+      const t = now + offset;
+      const osc = this.ctx!.createOscillator();
+      const oscHarmonic = this.ctx!.createOscillator();
+      const gain = this.ctx!.createGain();
+
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(580, t);
+      osc.frequency.exponentialRampToValueAtTime(290, t + 0.13);
+
+      oscHarmonic.type = 'triangle';
+      oscHarmonic.frequency.setValueAtTime(870, t);
+      oscHarmonic.frequency.exponentialRampToValueAtTime(435, t + 0.13);
+
+      const filter = this.ctx!.createBiquadFilter();
+      filter.type = 'bandpass';
+      filter.frequency.setValueAtTime(800, t);
+      filter.frequency.exponentialRampToValueAtTime(450, t + 0.13);
+      filter.Q.setValueAtTime(3.5, t);
+
+      gain.gain.setValueAtTime(0.001, t);
+      gain.gain.linearRampToValueAtTime(0.18, t + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.14);
+
+      osc.connect(filter);
+      oscHarmonic.connect(filter);
+      filter.connect(gain);
+      gain.connect(this.masterGain!);
+
+      osc.start(t);
+      oscHarmonic.start(t);
+      osc.stop(t + 0.15);
+      oscHarmonic.stop(t + 0.15);
+    });
+  }
 }

@@ -4,6 +4,7 @@ import { CameraController } from './core/CameraController';
 import { SoundEngine } from './audio/SoundEngine';
 import { EnvironmentModel } from './models/EnvironmentModel';
 import { CrossingModel } from './models/CrossingModel';
+import { DogHouseModel } from './models/DogHouseModel';
 import { TrainManager } from './system/TrainManager';
 import { TrafficManager } from './system/TrafficManager';
 import { CrossingController } from './system/CrossingController';
@@ -16,6 +17,7 @@ class App {
   private soundEngine: SoundEngine;
   private envModel: EnvironmentModel;
   private crossingModel: CrossingModel;
+  private dogHouseModel: DogHouseModel;
   private trainManager: TrainManager;
   private trafficManager: TrafficManager;
   private crossingController: CrossingController;
@@ -45,6 +47,9 @@ class App {
     this.crossingModel = new CrossingModel();
     this.sceneManager.scene.add(this.crossingModel.group);
 
+    this.dogHouseModel = new DogHouseModel(this.soundEngine);
+    this.sceneManager.scene.add(this.dogHouseModel.group);
+
     // Systems
     this.trainManager = new TrainManager(this.sceneManager.scene, this.soundEngine);
     this.trafficManager = new TrafficManager(this.sceneManager.scene, this.soundEngine);
@@ -61,6 +66,7 @@ class App {
       this.trafficManager,
       this.crossingModel,
       this.envModel,
+      this.dogHouseModel,
       this.soundEngine
     );
 
@@ -128,6 +134,7 @@ class App {
     this.crossingController.update(delta);
     this.trainManager.update(delta);
     this.trafficManager.update(delta, isCrossingSafe);
+    this.dogHouseModel.update(delta);
 
     // Update Camera
     const activeTrainX = this.trainManager.activeTrain ? this.trainManager.activeTrain.posX : undefined;

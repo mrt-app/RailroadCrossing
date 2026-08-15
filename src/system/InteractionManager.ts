@@ -3,6 +3,7 @@ import { CrossingController } from './CrossingController';
 import { TrafficManager } from './TrafficManager';
 import { CrossingModel } from '../models/CrossingModel';
 import { EnvironmentModel } from '../models/EnvironmentModel';
+import { DogHouseModel } from '../models/DogHouseModel';
 import { SoundEngine } from '../audio/SoundEngine';
 
 export class InteractionManager {
@@ -11,6 +12,7 @@ export class InteractionManager {
   private trafficManager: TrafficManager;
   private crossingModel: CrossingModel;
   private envModel: EnvironmentModel;
+  private dogHouseModel: DogHouseModel;
   private soundEngine: SoundEngine;
 
   private raycaster: THREE.Raycaster;
@@ -25,6 +27,7 @@ export class InteractionManager {
     trafficManager: TrafficManager,
     crossingModel: CrossingModel,
     envModel: EnvironmentModel,
+    dogHouseModel: DogHouseModel,
     soundEngine: SoundEngine
   ) {
     this.camera = camera;
@@ -32,6 +35,7 @@ export class InteractionManager {
     this.trafficManager = trafficManager;
     this.crossingModel = crossingModel;
     this.envModel = envModel;
+    this.dogHouseModel = dogHouseModel;
     this.soundEngine = soundEngine;
 
     this.raycaster = new THREE.Raycaster();
@@ -54,7 +58,24 @@ export class InteractionManager {
 
       this.raycaster.setFromCamera(this.pointer, this.camera);
 
-      // 1. Check Crossing clickable meshes
+      // 1. Check DogHouse & Dog clickable meshes
+      const dogHouseIntersects = this.raycaster.intersectObjects(this.dogHouseModel.clickableMeshes, true);
+      if (dogHouseIntersects.length > 0) {
+        this.createTapEffect(clientX, clientY, '🐶');
+        const triggered = this.dogHouseModel.triggerDogBark();
+        if (triggered) {
+          const dogBarks = [
+            'ワンワン！🐶 ボクの おうち だよ！わん！',
+            'ワンッ！ワンワン！🦴 でんしゃ だいすき！',
+            'バウッ！ワンワン！🐕 きょうも 元気いっぱい！'
+          ];
+          const msg = dogBarks[Math.floor(Math.random() * dogBarks.length)];
+          this.showGuideMessage(msg);
+        }
+        return;
+      }
+
+      // 2. Check Crossing clickable meshes
       const crossingIntersects = this.raycaster.intersectObjects(this.crossingModel.clickableMeshes, true);
       if (crossingIntersects.length > 0) {
         this.createTapEffect(clientX, clientY, '⭐');
@@ -66,12 +87,10 @@ export class InteractionManager {
         return;
       }
 
-      // 2. Check Road meshes
+      // 3. Check Road meshes
       const roadIntersects = this.raycaster.intersectObjects(this.envModel.roadMeshes, true);
       if (roadIntersects.length > 0) {
         const hitPoint = roadIntersects[0].point;
-        // If tapped on South road (Z > 0), spawn car going South to North (+Z to -Z, direction = 1)
-        // If tapped on North road (Z < 0), spawn car going North to South (-Z to +Z, direction = -1)
         const preferDirection = (hitPoint.z > 0) ? 1 : -1;
 
         this.createTapEffect(clientX, clientY, '✨');
@@ -84,18 +103,16 @@ export class InteractionManager {
         return;
       }
 
-      // 3. If tapped anywhere near crossing zone
+      // 4. If tapped anywhere near crossing zone
       const allEnvIntersects = this.raycaster.intersectObject(this.envModel.group, true);
       if (allEnvIntersects.length > 0) {
         const pt = allEnvIntersects[0].point;
         if (Math.abs(pt.x) < 8 && Math.abs(pt.z) < 8) {
-          // Tapped center crossing area
           this.createTapEffect(clientX, clientY, '⚠️');
           this.soundEngine.playTapSound();
           this.crossingController.triggerCrossingSequence();
           this.showGuideMessage('カンカンカン！ふみきり スタート！🚊');
         } else if (Math.abs(pt.x) < 10) {
-          // Tapped road vicinity
           this.createTapEffect(clientX, clientY, '🚙');
           this.soundEngine.playTapSound();
           const preferDir = (pt.z > 0) ? 1 : -1;
@@ -108,29 +125,34 @@ export class InteractionManager {
       }
     };
 
-    window.addEventListener('click', (e) => {
+    window.addEventListener('click', (e: MouseEvent) => {
       handleTap(e.clientX, e.clientY, e.target);
     });
 
-    window.addEventListener('touchend', (e) => {
+    window.addEventListener('touchend', (e: TouchEvent) => {
       if (e.changedTouches.length > 0) {
         const t = e.changedTouches[0];
         handleTap(t.clientX, t.clientY, e.target);
       }
-    }, { passive: true });
+    });
   }
 
-  public showGuideMessage(msg: string, durationMs: number = 3000): void {
+  public showGuideMessage(text: string, durationMs: number = 3200): void {
     if (!this.guideTextEl) return;
-    this.guideTextEl.textContent = msg;
 
-    if (this.guideTimer !== null) {
+    this.guideTextEl.textContent = text;
+    const banner = document.getElementById('guide-banner');
+    if (banner) {
+      banner.classList.add('visible');
+    }
+
+    if (this.guideTimer) {
       clearTimeout(this.guideTimer);
     }
 
     this.guideTimer = window.setTimeout(() => {
-      if (this.guideTextEl) {
-        this.guideTextEl.textContent = 'ふみきり や どうろ を タップしてみてね！';
+      if (banner) {
+        banner.classList.remove('visible');
       }
     }, durationMs);
   }
@@ -138,25 +160,16 @@ export class InteractionManager {
   private createTapEffect(x: number, y: number, emoji: string): void {
     if (!this.tapEffectsLayer) return;
 
-    // Create floating star/emoji
-    const star = document.createElement('div');
-    star.className = 'tap-star';
-    star.textContent = emoji;
-    star.style.left = `${x}px`;
-    star.style.top = `${y}px`;
+    const el = document.createElement('div');
+    el.className = 'tap-popup';
+    el.textContent = emoji;
+    el.style.left = `${x}px`;
+    el.style.top = `${y}px`;
 
-    // Create expanding ripple
-    const ripple = document.createElement('div');
-    ripple.className = 'tap-ripple';
-    ripple.style.left = `${x}px`;
-    ripple.style.top = `${y}px`;
-
-    this.tapEffectsLayer.appendChild(star);
-    this.tapEffectsLayer.appendChild(ripple);
+    this.tapEffectsLayer.appendChild(el);
 
     setTimeout(() => {
-      star.remove();
-      ripple.remove();
-    }, 700);
+      el.remove();
+    }, 1000);
   }
 }
