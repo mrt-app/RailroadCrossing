@@ -114,9 +114,9 @@ export class EnvironmentModel {
     // Sidewalks
     const sidewalkMat = new THREE.MeshLambertMaterial({ color: 0xCFD8DC });
     [-5.0, 5.0].forEach((xPos) => {
-      const swGeo = new THREE.BoxGeometry(1.2, 0.12, roadLength);
+      const swGeo = new THREE.BoxGeometry(1.4, 0.14, roadLength);
       const sw = new THREE.Mesh(swGeo, sidewalkMat);
-      sw.position.set(xPos, 0.06, 0);
+      sw.position.set(xPos, 0.07, 0);
       sw.receiveShadow = true;
       roadGroup.add(sw);
     });
@@ -135,7 +135,7 @@ export class EnvironmentModel {
     // Roadside Stop Signs (止まれ)
     [-1, 1].forEach((dir) => {
       const signGroup = new THREE.Group();
-      signGroup.position.set(-4.2 * dir, 0, 8.0 * dir);
+      signGroup.position.set(-4.5 * dir, 0, 7.8 * dir);
 
       const signPole = new THREE.Mesh(
         new THREE.CylinderGeometry(0.04, 0.04, 2.4, 8),
@@ -220,92 +220,93 @@ export class EnvironmentModel {
   }
 
   /**
-   * Creates authentic Japanese Streetlights (街路灯) prominently positioned along the road
+   * Creates Japanese Streetlights (街路灯) prominently positioned along the sidewalks
    */
   private createStreetlights(): void {
-    // Streetlights placed right at the crossing approaches and sidewalks where camera sees them clearly!
+    // Streetlight Positions (along sidewalks, clear of the crossing gate)
     const streetLightPositions = [
-      { x: 4.8, z: 6.8, armDir: -1 },   // South-East near stop line
-      { x: -4.8, z: 6.8, armDir: 1 },   // South-West near stop line
-      { x: 4.8, z: -6.8, armDir: -1 },  // North-East near stop line
-      { x: -4.8, z: -6.8, armDir: 1 },  // North-West near stop line
-      { x: 4.8, z: 18.0, armDir: -1 },  // South road entrance
-      { x: -4.8, z: -18.0, armDir: 1 }  // North road entrance
+      { x: 5.6, z: 9.2, armDir: -1 },   // South-East sidewalk (close to crossing)
+      { x: -5.6, z: 9.2, armDir: 1 },   // South-West sidewalk (close to crossing)
+      { x: 5.6, z: -9.2, armDir: -1 },  // North-East sidewalk (close to crossing)
+      { x: -5.6, z: -9.2, armDir: 1 },  // North-West sidewalk (close to crossing)
+      { x: 5.6, z: 20.0, armDir: -1 },  // South road entrance
+      { x: -5.6, z: -20.0, armDir: 1 }  // North road entrance
     ];
 
-    // Dark Forest Green Japanese Streetlight Finish (深緑の防犯街路灯)
-    const poleMat = new THREE.MeshLambertMaterial({ color: 0x1A382B });
-    const silverTrimMat = new THREE.MeshStandardMaterial({ color: 0xCFD8DC, metalness: 0.8, roughness: 0.2 });
+    // High-visibility Japanese Streetlight Colors
+    const poleMat = new THREE.MeshLambertMaterial({ color: 0x2E7D32 }); // Rich Forest Green
+    const silverMat = new THREE.MeshStandardMaterial({ color: 0xE0E0E0, metalness: 0.8, roughness: 0.2 });
+    const shadeMat = new THREE.MeshLambertMaterial({ color: 0x1B5E20 });
 
     streetLightPositions.forEach((pos) => {
       const poleGroup = new THREE.Group();
       poleGroup.position.set(pos.x, 0, pos.z);
 
-      // 1. Concrete Pedestal Base (コンクリート基礎)
+      // 1. Concrete Pedestal Base (コンクリート台座)
       const base = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.24, 0.30, 0.6, 12),
+        new THREE.CylinderGeometry(0.28, 0.35, 0.55, 12),
         new THREE.MeshLambertMaterial({ color: 0x9E9E9E })
       );
-      base.position.y = 0.3;
+      base.position.y = 0.27;
       base.receiveShadow = true;
       poleGroup.add(base);
 
-      // 2. Main Sturdy Pole (高耐久スチール柱 4.8m)
+      // 2. Main Sturdy Green Pole (高さ 4.6m)
       const pole = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.11, 0.15, 4.5, 12),
+        new THREE.CylinderGeometry(0.12, 0.16, 4.4, 12),
         poleMat
       );
-      pole.position.y = 2.55;
+      pole.position.y = 2.45;
       pole.castShadow = true;
       poleGroup.add(pole);
 
-      // Silver decorative bands on pole
-      [1.2, 3.2].forEach(y => {
-        const ring = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 0.08, 12), silverTrimMat);
+      // Decorative silver rings
+      [1.0, 2.5, 3.8].forEach(y => {
+        const ring = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.17, 0.08, 12), silverMat);
         ring.position.y = y;
         poleGroup.add(ring);
       });
 
-      // 3. Elegant Curved Cantilever Arm overhanging the road
-      const armCurve = new THREE.Mesh(
+      // 3. Arched Cantilever Arm reaching over the street
+      const arm = new THREE.Mesh(
         new THREE.CylinderGeometry(0.08, 0.08, 1.8, 10),
         poleMat
       );
-      armCurve.rotation.z = pos.armDir * (Math.PI / 3.8);
-      armCurve.position.set(pos.armDir * 0.7, 4.9, 0);
-      poleGroup.add(armCurve);
+      arm.rotation.z = pos.armDir * (Math.PI / 3.6);
+      arm.position.set(pos.armDir * 0.75, 4.85, 0);
+      poleGroup.add(arm);
 
-      // 4. Large Bell-Shaped Lampshade (傘型ランプシェード)
+      // 4. Conical Green Lampshade (傘型シェード)
       const shade = new THREE.Mesh(
-        new THREE.ConeGeometry(0.65, 0.35, 16, 1, true),
-        poleMat
+        new THREE.ConeGeometry(0.75, 0.40, 16, 1, true),
+        shadeMat
       );
-      shade.position.set(pos.armDir * 1.45, 5.2, 0);
+      shade.position.set(pos.armDir * 1.5, 5.15, 0);
       shade.castShadow = true;
       poleGroup.add(shade);
 
-      // Top finial
-      const finial = new THREE.Mesh(new THREE.SphereGeometry(0.12, 8, 8), silverTrimMat);
-      finial.position.set(pos.armDir * 1.45, 5.4, 0);
+      // Top silver finial cap
+      const finial = new THREE.Mesh(new THREE.SphereGeometry(0.14, 8, 8), silverMat);
+      finial.position.set(pos.armDir * 1.5, 5.38, 0);
       poleGroup.add(finial);
 
-      // 5. Glowing Luminous LED Bulb (大型電球ドーム)
+      // 5. Large Glowing LED Globe Bulb (昼間も白いガラス玉として見え、夜に明るく光る)
       const bulbMat = new THREE.MeshStandardMaterial({
-        color: 0xFFFDE7,
-        emissive: 0xFFD54F,
-        emissiveIntensity: 0.3, // Soft glow in day
+        color: 0xFFFFFF,
+        emissive: 0xFFF9C4,
+        emissiveIntensity: 0.5,
         roughness: 0.1
       });
       const bulb = new THREE.Mesh(
-        new THREE.SphereGeometry(0.28, 16, 16, 0, Math.PI * 2, 0, Math.PI * 0.6),
+        new THREE.SphereGeometry(0.32, 16, 16, 0, Math.PI * 2, 0, Math.PI * 0.6),
         bulbMat
       );
-      bulb.position.set(pos.armDir * 1.45, 5.08, 0);
+      bulb.position.set(pos.armDir * 1.5, 5.0, 0);
       poleGroup.add(bulb);
       this.streetLightMaterials.push(bulbMat);
 
-      // 6. Atmospheric Night Light Cone (夜間に浮かび上がる光の円錐ビーム)
-      const coneGeo = new THREE.ConeGeometry(3.6, 5.0, 16, 1, true);
+      // 6. Atmospheric Night Light Cone Beam (夜間の光のすじ)
+      const coneGeo = new THREE.ConeGeometry(3.8, 5.0, 16, 1, true);
       const coneMat = new THREE.MeshBasicMaterial({
         color: 0xFFE082,
         transparent: true,
@@ -314,12 +315,12 @@ export class EnvironmentModel {
         depthWrite: false
       });
       const lightBeam = new THREE.Mesh(coneGeo, coneMat);
-      lightBeam.position.set(pos.armDir * 1.45, 2.5, 0);
+      lightBeam.position.set(pos.armDir * 1.5, 2.5, 0);
       poleGroup.add(lightBeam);
       this.streetGroundGlows.push(lightBeam);
 
-      // 7. Warm Ground Illumination Pool (路面に落ちる光の輪)
-      const glowGeo = new THREE.CircleGeometry(4.2, 20);
+      // 7. Warm Ground Illumination Disc (アスファルト路面への照り返し)
+      const glowGeo = new THREE.CircleGeometry(4.5, 20);
       const glowMat = new THREE.MeshBasicMaterial({
         color: 0xFFD54F,
         transparent: true,
@@ -328,7 +329,7 @@ export class EnvironmentModel {
       });
       const groundGlow = new THREE.Mesh(glowGeo, glowMat);
       groundGlow.rotation.x = -Math.PI / 2;
-      groundGlow.position.set(pos.armDir * 1.45, 0.04, 0);
+      groundGlow.position.set(pos.armDir * 1.5, 0.04, 0);
       poleGroup.add(groundGlow);
       this.streetGroundGlows.push(groundGlow);
 
@@ -465,11 +466,11 @@ export class EnvironmentModel {
       if (isNight) {
         mat.color.setHex(0xFFFFFF);
         mat.emissive.setHex(0xFFF176);
-        mat.emissiveIntensity = 2.8;
+        mat.emissiveIntensity = 3.0;
       } else {
-        mat.color.setHex(0xFFFDE7);
-        mat.emissive.setHex(0xFFD54F);
-        mat.emissiveIntensity = 0.3;
+        mat.color.setHex(0xFFFFFF);
+        mat.emissive.setHex(0xFFF9C4);
+        mat.emissiveIntensity = 0.5;
       }
     });
 
@@ -477,11 +478,10 @@ export class EnvironmentModel {
     this.streetGroundGlows.forEach((mesh) => {
       const mat = mesh.material as THREE.MeshBasicMaterial;
       if (mat) {
-        // Cones get 0.18 opacity, ground circles get 0.42 opacity
         if (mesh.geometry.type === 'ConeGeometry') {
-          mat.opacity = isNight ? 0.18 : 0;
+          mat.opacity = isNight ? 0.22 : 0;
         } else {
-          mat.opacity = isNight ? 0.42 : 0;
+          mat.opacity = isNight ? 0.48 : 0;
         }
       }
     });
