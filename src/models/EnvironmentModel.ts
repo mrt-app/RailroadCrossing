@@ -356,12 +356,6 @@ export class EnvironmentModel {
     house.add(win3);
     this.windowMaterials.push(winMat3);
 
-    // Warm Window PointLight (turns on at night)
-    const houseLight = new THREE.PointLight(0xFFD54F, 0, 10, 1.8);
-    houseLight.position.set(0, 1.6, 1.8);
-    house.add(houseLight);
-    this.windowLights.push(houseLight);
-
     // Door
     const doorMat = new THREE.MeshLambertMaterial({ color: 0x8D6E63 });
     const door = new THREE.Mesh(new THREE.BoxGeometry(0.9, 1.4, 0.1), doorMat);
@@ -385,10 +379,6 @@ export class EnvironmentModel {
         mat.emissive.setHex(0x000000);
         mat.emissiveIntensity = 0;
       }
-    });
-
-    this.windowLights.forEach((light) => {
-      light.intensity = isNight ? 1.5 : 0;
     });
   }
 }

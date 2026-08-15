@@ -571,7 +571,7 @@ export class VehicleModel {
     // ==========================================
     // Headlights, Taillights, Wheels
     // ==========================================
-    const lightGeo = new THREE.CircleGeometry(0.16, 12);
+    const lightGeo = new THREE.CircleGeometry(0.16, 10);
     const headMat = new THREE.MeshBasicMaterial({ color: 0xFFFDE7 });
     const tailMat = new THREE.MeshBasicMaterial({ color: 0xD50000 });
 
@@ -586,17 +586,12 @@ export class VehicleModel {
       this.group.add(tLight);
     });
 
-    const carFrontLight = new THREE.PointLight(0xFFFDE7, 0.8, 10);
-    carFrontLight.position.set(0, 0.6, cfg.length / 2 + 0.5);
-    this.group.add(carFrontLight);
-    this.headlights.push(carFrontLight);
-
     // Wheels setup
     let wheelRadius = 0.32;
     if (cfg.type === 'suv' || cfg.type === 'semi_truck') wheelRadius = 0.38;
     if (cfg.type === 'kei_truck' || cfg.type === 'kei_car' || cfg.type === 'sports_car') wheelRadius = 0.28;
 
-    const wheelGeo = new THREE.CylinderGeometry(wheelRadius, wheelRadius, 0.18, 16);
+    const wheelGeo = new THREE.CylinderGeometry(wheelRadius, wheelRadius, 0.18, 12);
     wheelGeo.rotateZ(Math.PI / 2);
 
     // Semi-truck has 3 axle sets (6 positions), others have 2 axles
@@ -608,22 +603,23 @@ export class VehicleModel {
     zPositions.forEach((zPos) => {
       const wL = new THREE.Mesh(wheelGeo, wheelMat);
       wL.position.set(cfg.width / 2 + 0.06, wheelRadius, zPos);
-      wL.castShadow = true;
       this.group.add(wL);
       this.wheels.push(wL);
 
       const wR = new THREE.Mesh(wheelGeo, wheelMat);
       wR.position.set(-cfg.width / 2 - 0.06, wheelRadius, zPos);
-      wR.castShadow = true;
       this.group.add(wR);
       this.wheels.push(wR);
     });
   }
 
   public update(delta: number): void {
-    if (this.sirenLight && this.sirenPointLight) {
+    if (this.sirenLight) {
       const pulse = Math.sin(Date.now() * 0.012);
-      this.sirenPointLight.intensity = pulse > 0 ? 1.8 : 0.2;
+      const mat = this.sirenLight.material as THREE.MeshStandardMaterial;
+      if (mat) {
+        mat.emissiveIntensity = pulse > 0 ? 1.8 : 0.2;
+      }
     }
 
     const distance = this.speed * delta;
@@ -640,5 +636,19 @@ export class VehicleModel {
 
   public resetLookingAnimation(): void {
     this.group.rotation.y = this.initialYRotation;
+  }
+
+  public dispose(): void {
+    this.group.traverse((child) => {
+      if ((child as THREE.Mesh).isMesh) {
+        const mesh = child as THREE.Mesh;
+        if (mesh.geometry) mesh.geometry.dispose();
+        if (Array.isArray(mesh.material)) {
+          mesh.material.forEach(m => m.dispose());
+        } else if (mesh.material) {
+          mesh.material.dispose();
+        }
+      }
+    });
   }
 }

@@ -175,5 +175,26 @@ export class UIManager {
         }
       });
     }
+
+    // 8. Quality Mode Toggle Button (さくさく ⇄ こうがしつ)
+    const btnQuality = document.getElementById('btn-quality');
+    if (btnQuality) {
+      btnQuality.addEventListener('click', () => {
+        this.soundEngine.playTapSound();
+        const mode = this.sceneManager.toggleQualityMode();
+        const iconEl = btnQuality.querySelector('.btn-icon');
+        const textEl = btnQuality.querySelector('.btn-subtext');
+
+        if (mode === 'fast') {
+          if (iconEl) iconEl.textContent = '⚡';
+          if (textEl) textEl.textContent = 'さくさく';
+          this.interactionManager.showGuideMessage('⚡ さくさくモード（超軽量・高速動作）にしました！');
+        } else {
+          if (iconEl) iconEl.textContent = '✨';
+          if (textEl) textEl.textContent = 'こうがしつ';
+          this.interactionManager.showGuideMessage('✨ 高画質モード（リアルな影ON）にしました！');
+        }
+      });
+    }
   }
 }

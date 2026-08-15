@@ -118,6 +118,7 @@ export class TrainManager {
   public removeTrain(): void {
     if (this.activeTrain) {
       this.scene.remove(this.activeTrain.model.group);
+      this.activeTrain.model.dispose(); // Free train GPU resources
       this.activeTrain = null;
       this.soundEngine.stopTrainSound();
     }

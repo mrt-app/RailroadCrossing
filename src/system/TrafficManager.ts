@@ -106,6 +106,7 @@ export class TrafficManager {
       const v = this.vehicles[i];
       if (Math.abs(v.group.position.z) > 75) {
         this.scene.remove(v.group);
+        v.dispose(); // Free GPU VRAM & buffers
         this.vehicles.splice(i, 1);
       }
     }
