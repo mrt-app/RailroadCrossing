@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import unmuteIosAudio from 'unmute-ios-audio';
 import { SceneManager } from './core/SceneManager';
 import { CameraController } from './core/CameraController';
 import { SoundEngine } from './audio/SoundEngine';
@@ -10,6 +11,13 @@ import { TrafficManager } from './system/TrafficManager';
 import { CrossingController } from './system/CrossingController';
 import { InteractionManager } from './system/InteractionManager';
 import { UIManager } from './ui/UIManager';
+
+// Force iOS/iPadOS audio session into active media playback channel
+try {
+  unmuteIosAudio();
+} catch {
+  // Ignore
+}
 
 class App {
   private sceneManager: SceneManager;
