@@ -9,9 +9,14 @@ export class EnvironmentModel {
   public windowMaterials: THREE.MeshStandardMaterial[] = [];
   public streetLightMaterials: THREE.MeshStandardMaterial[] = [];
   public streetGroundGlows: THREE.Mesh[] = [];
+  public streetPointLights: THREE.PointLight[] = [];
+
+  private radialLightTexture: THREE.CanvasTexture;
 
   constructor() {
     this.group = new THREE.Group();
+    this.radialLightTexture = this.createRadialLightTexture();
+
     this.createTerrain();
     this.createTracks();
     this.createRoad();
@@ -19,6 +24,29 @@ export class EnvironmentModel {
     this.createStationPlatform();
     this.createStreetlights();
     this.createScenery();
+  }
+
+  /**
+   * Generates a high-quality soft radial gradient texture for realistic light pools on the road
+   */
+  private createRadialLightTexture(): THREE.CanvasTexture {
+    const canvas = document.createElement('canvas');
+    canvas.width = 256;
+    canvas.height = 256;
+    const ctx = canvas.getContext('2d')!;
+
+    const gradient = ctx.createRadialGradient(128, 128, 0, 128, 128, 128);
+    gradient.addColorStop(0.00, 'rgba(255, 245, 210, 0.95)'); // Bright warm center core
+    gradient.addColorStop(0.25, 'rgba(255, 224, 130, 0.65)'); // Soft warm amber
+    gradient.addColorStop(0.55, 'rgba(255, 193, 7, 0.28)');   // Gentle midtone
+    gradient.addColorStop(0.80, 'rgba(255, 160, 0, 0.08)');   // Outer feather
+    gradient.addColorStop(1.00, 'rgba(255, 140, 0, 0.00)');   // Completely seamless edge
+
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, 256, 256);
+
+    const texture = new THREE.CanvasTexture(canvas);
+    return texture;
   }
 
   private createTerrain(): void {
@@ -220,7 +248,7 @@ export class EnvironmentModel {
   }
 
   /**
-   * Creates simple, clean Japanese streetlights (シンプルな街路灯) along the sidewalks
+   * Creates clean, beautifully illuminated streetlights (シンプルな街路灯) along the sidewalks
    */
   private createStreetlights(): void {
     const streetLightPositions = [
@@ -230,7 +258,7 @@ export class EnvironmentModel {
       { x: -5.4, z: -9.0, armDir: 1 }   // North-West
     ];
 
-    const poleMat = new THREE.MeshLambertMaterial({ color: 0x455A64 }); // Clean dark slate pole
+    const poleMat = new THREE.MeshLambertMaterial({ color: 0x455A64 });
     const housingMat = new THREE.MeshLambertMaterial({ color: 0x263238 });
 
     streetLightPositions.forEach((pos) => {
@@ -278,19 +306,26 @@ export class EnvironmentModel {
       poleGroup.add(bulb);
       this.streetLightMaterials.push(bulbMat);
 
-      // 5. Gentle Warm Ground Glow on Road (夜間の足元ライト)
-      const glowGeo = new THREE.CircleGeometry(3.2, 16);
+      // 5. Realistic Soft Radial Gradient Ground Light Pool (柔らかなグラデーション光輪)
+      const glowGeo = new THREE.PlaneGeometry(7.0, 7.0);
       const glowMat = new THREE.MeshBasicMaterial({
-        color: 0xFFE082,
+        map: this.radialLightTexture,
         transparent: true,
-        opacity: 0,
-        depthWrite: false
+        blending: THREE.AdditiveBlending, // Realistic natural physical light blending
+        depthWrite: false,
+        opacity: 0
       });
       const groundGlow = new THREE.Mesh(glowGeo, glowMat);
       groundGlow.rotation.x = -Math.PI / 2;
-      groundGlow.position.set(pos.armDir * 0.75, 0.04, 0);
+      groundGlow.position.set(pos.armDir * 0.75, 0.038, 0);
       poleGroup.add(groundGlow);
       this.streetGroundGlows.push(groundGlow);
+
+      // 6. Warm Physical PointLight for illuminating passing cars and environment
+      const light = new THREE.PointLight(0xFFE082, 0, 9.0, 2.0);
+      light.position.set(pos.armDir * 0.75, 3.6, 0);
+      poleGroup.add(light);
+      this.streetPointLights.push(light);
 
       this.group.add(poleGroup);
     });
@@ -420,29 +455,30 @@ export class EnvironmentModel {
       }
     });
 
-    // 2. Streetlights Bulbs
+    // 2. Streetlights Lamp Surface
     this.streetLightMaterials.forEach((mat) => {
       if (isNight) {
         mat.color.setHex(0xFFFFFF);
-        mat.emissive.setHex(0xFFF176);
-        mat.emissiveIntensity = 3.0;
+        mat.emissive.setHex(0xFFF59D);
+        mat.emissiveIntensity = 2.8;
       } else {
         mat.color.setHex(0xFFFFFF);
-        mat.emissive.setHex(0xFFF9C4);
-        mat.emissiveIntensity = 0.5;
+        mat.emissive.setHex(0xFFE082);
+        mat.emissiveIntensity = 0.3;
       }
     });
 
-    // 3. Street Ground Glows & Light Beams
+    // 3. Realistic Soft Ground Illumination (Additive Blending)
     this.streetGroundGlows.forEach((mesh) => {
       const mat = mesh.material as THREE.MeshBasicMaterial;
       if (mat) {
-        if (mesh.geometry.type === 'ConeGeometry') {
-          mat.opacity = isNight ? 0.22 : 0;
-        } else {
-          mat.opacity = isNight ? 0.48 : 0;
-        }
+        mat.opacity = isNight ? 0.75 : 0;
       }
+    });
+
+    // 4. Warm PointLight (Dynamic Light on road & passing cars)
+    this.streetPointLights.forEach((light) => {
+      light.intensity = isNight ? 1.5 : 0;
     });
   }
 }
