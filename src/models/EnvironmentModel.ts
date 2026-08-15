@@ -1,12 +1,14 @@
 import * as THREE from 'three';
 
 /**
- * Creates a focused, high-detail miniature environment: terrain, rails, road, stop lines, trees, houses, and station.
+ * Creates a focused, high-detail miniature environment: terrain, rails, road, streetlights, trees, houses, and station.
  */
 export class EnvironmentModel {
   public group: THREE.Group;
   public roadMeshes: THREE.Mesh[] = [];
   public windowMaterials: THREE.MeshStandardMaterial[] = [];
+  public streetLightMaterials: THREE.MeshStandardMaterial[] = [];
+  public streetGroundGlows: THREE.Mesh[] = [];
 
   constructor() {
     this.group = new THREE.Group();
@@ -15,6 +17,7 @@ export class EnvironmentModel {
     this.createRoad();
     this.createCrossingPavement();
     this.createStationPlatform();
+    this.createStreetlights();
     this.createScenery();
   }
 
@@ -40,7 +43,7 @@ export class EnvironmentModel {
 
   private createTracks(): void {
     const trackGroup = new THREE.Group();
-    const trackLength = 65; // Focused track length
+    const trackLength = 65;
     const trackZPositions = [-2.2, 2.2];
     const tieSpacing = 1.0;
     const numTiesPerTrack = Math.floor(trackLength / tieSpacing);
@@ -129,7 +132,7 @@ export class EnvironmentModel {
       }
     });
 
-    // Roadside Stop Signs (止まれ) positioned safely outside crossing footprint
+    // Roadside Stop Signs (止まれ)
     [-1, 1].forEach((dir) => {
       const signGroup = new THREE.Group();
       signGroup.position.set(-4.2 * dir, 0, 8.0 * dir);
@@ -141,7 +144,6 @@ export class EnvironmentModel {
       signPole.position.y = 1.2;
       signGroup.add(signPole);
 
-      // Inverted Triangle Stop Sign
       const signHead = new THREE.Mesh(
         new THREE.ConeGeometry(0.55, 0.04, 3),
         new THREE.MeshLambertMaterial({ color: 0xD50000 })
@@ -215,6 +217,76 @@ export class EnvironmentModel {
     });
 
     this.group.add(stationGroup);
+  }
+
+  /**
+   * Creates authentic Japanese Streetlights (街路灯) along the road with warm night illumination
+   */
+  private createStreetlights(): void {
+    const streetLightPositions = [
+      { x: 5.2, z: 12.5, armDir: -1 },
+      { x: -5.2, z: 12.5, armDir: 1 },
+      { x: 5.2, z: -12.5, armDir: -1 },
+      { x: -5.2, z: -12.5, armDir: 1 }
+    ];
+
+    const poleMat = new THREE.MeshLambertMaterial({ color: 0x78909C });
+    const lampHousingMat = new THREE.MeshLambertMaterial({ color: 0x37474F });
+
+    streetLightPositions.forEach((pos) => {
+      const poleGroup = new THREE.Group();
+      poleGroup.position.set(pos.x, 0, pos.z);
+
+      // Base Pedestal
+      const base = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.18, 0.4, 8), poleMat);
+      base.position.y = 0.2;
+      poleGroup.add(base);
+
+      // Main Vertical Pole (4m tall)
+      const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.09, 3.8, 8), poleMat);
+      pole.position.y = 2.1;
+      poleGroup.add(pole);
+
+      // Curved Cantilever Arm extending toward the road
+      const armGeo = new THREE.CylinderGeometry(0.04, 0.04, 1.2, 8);
+      const arm = new THREE.Mesh(armGeo, poleMat);
+      arm.rotation.z = pos.armDir * (Math.PI / 4);
+      arm.position.set(pos.armDir * 0.42, 4.1, 0);
+      poleGroup.add(arm);
+
+      // Streetlamp Housing
+      const housing = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.12, 0.55), lampHousingMat);
+      housing.position.set(pos.armDir * 0.85, 4.35, 0);
+      poleGroup.add(housing);
+
+      // Glowing LED Light Fixture (Emissive downward lens)
+      const bulbMat = new THREE.MeshStandardMaterial({
+        color: 0xFFF9C4,
+        emissive: 0x000000,
+        emissiveIntensity: 0,
+        roughness: 0.1
+      });
+      const bulb = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.02, 0.48), bulbMat);
+      bulb.position.set(pos.armDir * 0.85, 4.28, 0);
+      poleGroup.add(bulb);
+      this.streetLightMaterials.push(bulbMat);
+
+      // Warm Soft Ground Glow Pool under the streetlight
+      const glowGeo = new THREE.CircleGeometry(3.5, 16);
+      const glowMat = new THREE.MeshBasicMaterial({
+        color: 0xFFE082,
+        transparent: true,
+        opacity: 0,
+        depthWrite: false
+      });
+      const groundGlow = new THREE.Mesh(glowGeo, glowMat);
+      groundGlow.rotation.x = -Math.PI / 2;
+      groundGlow.position.set(pos.armDir * 1.5, 0.04, 0);
+      poleGroup.add(groundGlow);
+      this.streetGroundGlows.push(groundGlow);
+
+      this.group.add(poleGroup);
+    });
   }
 
   private createScenery(): void {
@@ -328,15 +400,37 @@ export class EnvironmentModel {
   }
 
   public setNightMode(isNight: boolean): void {
+    // 1. House Windows
     this.windowMaterials.forEach((mat) => {
       if (isNight) {
         mat.color.setHex(0xFFF9C4);
         mat.emissive.setHex(0xFFD54F);
-        mat.emissiveIntensity = 1.3;
+        mat.emissiveIntensity = 1.4;
       } else {
         mat.color.setHex(0xE0F7FA);
         mat.emissive.setHex(0x000000);
         mat.emissiveIntensity = 0;
+      }
+    });
+
+    // 2. Streetlights
+    this.streetLightMaterials.forEach((mat) => {
+      if (isNight) {
+        mat.color.setHex(0xFFFFFF);
+        mat.emissive.setHex(0xFFF176);
+        mat.emissiveIntensity = 2.4;
+      } else {
+        mat.color.setHex(0xFFF9C4);
+        mat.emissive.setHex(0x000000);
+        mat.emissiveIntensity = 0;
+      }
+    });
+
+    // 3. Street Ground Glows
+    this.streetGroundGlows.forEach((mesh) => {
+      const mat = mesh.material as THREE.MeshBasicMaterial;
+      if (mat) {
+        mat.opacity = isNight ? 0.35 : 0;
       }
     });
   }
