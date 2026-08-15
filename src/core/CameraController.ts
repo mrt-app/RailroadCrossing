@@ -10,12 +10,15 @@ export class CameraController {
   private targetLookAt: THREE.Vector3 = new THREE.Vector3();
   private currentLookAt: THREE.Vector3 = new THREE.Vector3();
 
-  // Pointer drag controls
+  // Pointer drag & pinch controls
   private isDragging: boolean = false;
   private previousMousePosition = { x: 0, y: 0 };
   private spherical: THREE.Spherical;
-  private isUserInteracting: boolean = false;
-  private userInteractionTimer: number = 0;
+  private isUserInteracting: boolean = false; // Once manually moved by fingers/mouse, camera stays locked and NEVER moves on its own
+
+  // Touch pinch gesture tracking
+  private initialPinchDistance: number = 0;
+  private initialRadius: number = 0;
 
   constructor() {
     // Narrow far plane to 120m to eliminate distant rendering overhead
@@ -29,7 +32,7 @@ export class CameraController {
 
   public setPreset(preset: CameraPreset, immediate: boolean = false): void {
     this.currentPreset = preset;
-    this.isUserInteracting = false;
+    this.isUserInteracting = false; // Reset manual lock when user explicitly clicks preset button
 
     switch (preset) {
       case 'overview':
@@ -61,6 +64,9 @@ export class CameraController {
       this.camera.position.copy(this.targetPosition);
       this.currentLookAt.copy(this.targetLookAt);
       this.camera.lookAt(this.currentLookAt);
+
+      const offset = new THREE.Vector3().subVectors(this.camera.position, this.currentLookAt);
+      this.spherical.setFromVector3(offset);
     }
   }
 
@@ -73,75 +79,135 @@ export class CameraController {
   }
 
   public update(delta: number, trainPositionX?: number): void {
+    // If the user has manipulated the camera with fingers or mouse, DO NOT move automatically!
+    if (this.isUserInteracting) {
+      return;
+    }
+
     if (this.currentPreset === 'train_follow' && trainPositionX !== undefined) {
       this.targetLookAt.set(trainPositionX, 1.4, -2.2);
       this.targetPosition.set(trainPositionX + 11, 5, 10);
     }
 
-    if (!this.isUserInteracting) {
-      this.camera.position.lerp(this.targetPosition, Math.min(1.0, delta * 3.8));
-      this.currentLookAt.lerp(this.targetLookAt, Math.min(1.0, delta * 3.8));
-      this.camera.lookAt(this.currentLookAt);
-    }
-
-    if (this.userInteractionTimer > 0) {
-      this.userInteractionTimer -= delta;
-      if (this.userInteractionTimer <= 0) {
-        this.isUserInteracting = false;
-      }
-    }
+    this.camera.position.lerp(this.targetPosition, Math.min(1.0, delta * 3.8));
+    this.currentLookAt.lerp(this.targetLookAt, Math.min(1.0, delta * 3.8));
+    this.camera.lookAt(this.currentLookAt);
   }
 
   private setupPointerControls(): void {
-    const domElement = window;
-
     const onPointerDown = (e: MouseEvent | TouchEvent) => {
       const target = e.target as HTMLElement;
-      if (target.closest('button') || target.closest('.start-overlay')) return;
+      if (target && (target.closest('button') || target.closest('.start-overlay'))) return;
 
-      this.isDragging = true;
-      const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
-      const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
-      this.previousMousePosition = { x: clientX, y: clientY };
+      if ('touches' in e) {
+        if (e.touches.length === 1) {
+          this.isDragging = true;
+          this.previousMousePosition = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+        } else if (e.touches.length === 2) {
+          this.isDragging = false;
+          const dx = e.touches[0].clientX - e.touches[1].clientX;
+          const dy = e.touches[0].clientY - e.touches[1].clientY;
+          this.initialPinchDistance = Math.hypot(dx, dy);
+
+          const offset = new THREE.Vector3().subVectors(this.camera.position, this.currentLookAt);
+          this.spherical.setFromVector3(offset);
+          this.initialRadius = this.spherical.radius;
+        }
+      } else {
+        this.isDragging = true;
+        this.previousMousePosition = { x: e.clientX, y: e.clientY };
+      }
     };
 
     const onPointerMove = (e: MouseEvent | TouchEvent) => {
-      if (!this.isDragging) return;
-      const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
-      const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+      if ('touches' in e) {
+        if (e.touches.length === 2 && this.initialPinchDistance > 0) {
+          // Pinch to Zoom with 2 fingers
+          const dx = e.touches[0].clientX - e.touches[1].clientX;
+          const dy = e.touches[0].clientY - e.touches[1].clientY;
+          const currentDistance = Math.hypot(dx, dy);
+          const factor = this.initialPinchDistance / currentDistance;
 
-      const deltaX = clientX - this.previousMousePosition.x;
-      const deltaY = clientY - this.previousMousePosition.y;
+          this.isUserInteracting = true; // Lock position permanently to user's choice
+          this.spherical.radius = Math.max(8.0, Math.min(48.0, this.initialRadius * factor));
 
-      if (Math.abs(deltaX) > 2 || Math.abs(deltaY) > 2) {
-        this.isUserInteracting = true;
-        this.userInteractionTimer = 6.0;
+          const offset = new THREE.Vector3().setFromSpherical(this.spherical);
+          this.camera.position.copy(this.currentLookAt).add(offset);
+          this.camera.lookAt(this.currentLookAt);
+          return;
+        }
 
-        const offset = new THREE.Vector3().subVectors(this.camera.position, this.currentLookAt);
-        this.spherical.setFromVector3(offset);
+        if (e.touches.length !== 1 || !this.isDragging) return;
+        const clientX = e.touches[0].clientX;
+        const clientY = e.touches[0].clientY;
 
-        this.spherical.theta -= deltaX * 0.005;
-        this.spherical.phi = Math.max(0.2, Math.min(Math.PI / 2.1, this.spherical.phi - deltaY * 0.005));
+        const deltaX = clientX - this.previousMousePosition.x;
+        const deltaY = clientY - this.previousMousePosition.y;
 
-        offset.setFromSpherical(this.spherical);
-        this.camera.position.copy(this.currentLookAt).add(offset);
-        this.camera.lookAt(this.currentLookAt);
+        if (Math.abs(deltaX) > 2 || Math.abs(deltaY) > 2) {
+          this.isUserInteracting = true; // Lock position permanently to user's choice
+
+          const offset = new THREE.Vector3().subVectors(this.camera.position, this.currentLookAt);
+          this.spherical.setFromVector3(offset);
+
+          this.spherical.theta -= deltaX * 0.005;
+          this.spherical.phi = Math.max(0.15, Math.min(Math.PI / 2.05, this.spherical.phi - deltaY * 0.005));
+
+          offset.setFromSpherical(this.spherical);
+          this.camera.position.copy(this.currentLookAt).add(offset);
+          this.camera.lookAt(this.currentLookAt);
+        }
+
+        this.previousMousePosition = { x: clientX, y: clientY };
+      } else {
+        if (!this.isDragging) return;
+        const deltaX = e.clientX - this.previousMousePosition.x;
+        const deltaY = e.clientY - this.previousMousePosition.y;
+
+        if (Math.abs(deltaX) > 2 || Math.abs(deltaY) > 2) {
+          this.isUserInteracting = true; // Lock position permanently to user's choice
+
+          const offset = new THREE.Vector3().subVectors(this.camera.position, this.currentLookAt);
+          this.spherical.setFromVector3(offset);
+
+          this.spherical.theta -= deltaX * 0.005;
+          this.spherical.phi = Math.max(0.15, Math.min(Math.PI / 2.05, this.spherical.phi - deltaY * 0.005));
+
+          offset.setFromSpherical(this.spherical);
+          this.camera.position.copy(this.currentLookAt).add(offset);
+          this.camera.lookAt(this.currentLookAt);
+        }
+
+        this.previousMousePosition = { x: e.clientX, y: e.clientY };
       }
-
-      this.previousMousePosition = { x: clientX, y: clientY };
     };
 
     const onPointerUp = () => {
       this.isDragging = false;
+      this.initialPinchDistance = 0;
     };
 
-    domElement.addEventListener('mousedown', onPointerDown);
-    domElement.addEventListener('mousemove', onPointerMove);
-    domElement.addEventListener('mouseup', onPointerUp);
+    const onWheel = (e: WheelEvent) => {
+      this.isUserInteracting = true; // Lock position permanently to user's choice
+      const offset = new THREE.Vector3().subVectors(this.camera.position, this.currentLookAt);
+      this.spherical.setFromVector3(offset);
 
-    domElement.addEventListener('touchstart', onPointerDown, { passive: true });
-    domElement.addEventListener('touchmove', onPointerMove, { passive: true });
-    domElement.addEventListener('touchend', onPointerUp, { passive: true });
+      this.spherical.radius = Math.max(8.0, Math.min(48.0, this.spherical.radius + e.deltaY * 0.02));
+
+      offset.setFromSpherical(this.spherical);
+      this.camera.position.copy(this.currentLookAt).add(offset);
+      this.camera.lookAt(this.currentLookAt);
+    };
+
+    window.addEventListener('mousedown', onPointerDown);
+    window.addEventListener('mousemove', onPointerMove);
+    window.addEventListener('mouseup', onPointerUp);
+
+    window.addEventListener('touchstart', onPointerDown, { passive: true });
+    window.addEventListener('touchmove', onPointerMove, { passive: true });
+    window.addEventListener('touchend', onPointerUp, { passive: true });
+
+    window.addEventListener('wheel', onWheel, { passive: true });
   }
 
   private onWindowResize(): void {
