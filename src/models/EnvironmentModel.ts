@@ -42,9 +42,19 @@ export class EnvironmentModel {
   private createTracks(): void {
     const trackGroup = new THREE.Group();
     const trackLength = 160;
-
-    // Track 1 (Up line) at Z = -2.2, Track 2 (Down line) at Z = 2.2
     const trackZPositions = [-2.2, 2.2];
+    const tieSpacing = 1.0;
+    const numTiesPerTrack = Math.floor(trackLength / tieSpacing);
+    const totalTies = numTiesPerTrack * trackZPositions.length;
+
+    // Sleepers (Ties / 枕木) - Optimized single InstancedMesh (1 draw call for all 320 ties!)
+    const tieGeo = new THREE.BoxGeometry(0.3, 0.15, 2.8);
+    const tieMat = new THREE.MeshLambertMaterial({ color: 0x5D4037 });
+    const instancedTies = new THREE.InstancedMesh(tieGeo, tieMat, totalTies);
+    instancedTies.receiveShadow = true;
+
+    const dummy = new THREE.Object3D();
+    let tieIdx = 0;
 
     trackZPositions.forEach((zPos) => {
       // Ballast (Gravel base)
@@ -55,19 +65,11 @@ export class EnvironmentModel {
       ballast.receiveShadow = true;
       trackGroup.add(ballast);
 
-      // Sleepers (Ties / 枕木)
-      const tieGeo = new THREE.BoxGeometry(0.3, 0.15, 2.8);
-      const tieMat = new THREE.MeshLambertMaterial({ color: 0x5D4037 });
-      const tieSpacing = 1.0;
-      const numTies = Math.floor(trackLength / tieSpacing);
-
-      for (let i = 0; i < numTies; i++) {
+      for (let i = 0; i < numTiesPerTrack; i++) {
         const x = -trackLength / 2 + i * tieSpacing;
-        const tie = new THREE.Mesh(tieGeo, tieMat);
-        tie.position.set(x, 0.22, zPos);
-        tie.castShadow = true;
-        tie.receiveShadow = true;
-        trackGroup.add(tie);
+        dummy.position.set(x, 0.22, zPos);
+        dummy.updateMatrix();
+        instancedTies.setMatrixAt(tieIdx++, dummy.matrix);
       }
 
       // Steel Rails
@@ -80,15 +82,15 @@ export class EnvironmentModel {
 
       const rail1 = new THREE.Mesh(railGeo, railMat);
       rail1.position.set(0, 0.32, zPos - 0.9);
-      rail1.castShadow = true;
       trackGroup.add(rail1);
 
       const rail2 = new THREE.Mesh(railGeo, railMat);
       rail2.position.set(0, 0.32, zPos + 0.9);
-      rail2.castShadow = true;
       trackGroup.add(rail2);
     });
 
+    instancedTies.instanceMatrix.needsUpdate = true;
+    trackGroup.add(instancedTies);
     this.group.add(trackGroup);
   }
 
