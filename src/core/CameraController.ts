@@ -18,8 +18,9 @@ export class CameraController {
   private userInteractionTimer: number = 0;
 
   constructor() {
-    this.camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.5, 300);
-    this.spherical = new THREE.Spherical(38, Math.PI / 3.4, Math.PI / 4);
+    // Narrow far plane to 120m to eliminate distant rendering overhead
+    this.camera = new THREE.PerspectiveCamera(46, window.innerWidth / window.innerHeight, 0.5, 120);
+    this.spherical = new THREE.Spherical(26, Math.PI / 3.4, Math.PI / 4);
 
     this.setPreset('overview', true);
     this.setupPointerControls();
@@ -32,25 +33,27 @@ export class CameraController {
 
     switch (preset) {
       case 'overview':
-        this.targetPosition.set(24, 22, 28);
-        this.targetLookAt.set(0, 1.2, 0);
+        // Focused cinematic high-angle view on crossing
+        this.targetPosition.set(16, 14, 20);
+        this.targetLookAt.set(0, 1.4, 0);
         break;
 
       case 'crossing_close':
-        this.targetPosition.set(10, 4.5, 12);
-        this.targetLookAt.set(0, 1.8, 0);
+        // Crisp intimate close-up on crossing gate and warning lights
+        this.targetPosition.set(8.2, 3.4, 10.5);
+        this.targetLookAt.set(0, 1.6, 0);
         break;
 
       case 'driver_view':
-        // South road looking North towards crossing
-        this.targetPosition.set(-2.2, 3.2, 18);
-        this.targetLookAt.set(-2.2, 1.5, 0);
+        // Car driver perspective stopping right in front of crossing
+        this.targetPosition.set(-2.2, 2.6, 14);
+        this.targetLookAt.set(-2.2, 1.4, 0);
         break;
 
       case 'train_follow':
-        // Looking along track from side
-        this.targetPosition.set(-18, 5, 9);
-        this.targetLookAt.set(0, 2.0, -2.2);
+        // Side platform view of passing train
+        this.targetPosition.set(-14, 4.5, 8.5);
+        this.targetLookAt.set(0, 1.8, -2.2);
         break;
     }
 
@@ -70,16 +73,14 @@ export class CameraController {
   }
 
   public update(delta: number, trainPositionX?: number): void {
-    // If train follow mode and train is present, smoothly track train
     if (this.currentPreset === 'train_follow' && trainPositionX !== undefined) {
-      this.targetLookAt.set(trainPositionX, 1.5, -2.2);
-      this.targetPosition.set(trainPositionX + 14, 6, 12);
+      this.targetLookAt.set(trainPositionX, 1.4, -2.2);
+      this.targetPosition.set(trainPositionX + 11, 5, 10);
     }
 
-    // Smooth lerp camera position and lookAt target
     if (!this.isUserInteracting) {
-      this.camera.position.lerp(this.targetPosition, Math.min(1.0, delta * 3.5));
-      this.currentLookAt.lerp(this.targetLookAt, Math.min(1.0, delta * 3.5));
+      this.camera.position.lerp(this.targetPosition, Math.min(1.0, delta * 3.8));
+      this.currentLookAt.lerp(this.targetLookAt, Math.min(1.0, delta * 3.8));
       this.camera.lookAt(this.currentLookAt);
     }
 
@@ -95,7 +96,6 @@ export class CameraController {
     const domElement = window;
 
     const onPointerDown = (e: MouseEvent | TouchEvent) => {
-      // Ignore if clicking on UI buttons
       const target = e.target as HTMLElement;
       if (target.closest('button') || target.closest('.start-overlay')) return;
 
@@ -115,9 +115,8 @@ export class CameraController {
 
       if (Math.abs(deltaX) > 2 || Math.abs(deltaY) > 2) {
         this.isUserInteracting = true;
-        this.userInteractionTimer = 6.0; // Return to preset after 6s idle
+        this.userInteractionTimer = 6.0;
 
-        // Gentle rotate around lookAt point
         const offset = new THREE.Vector3().subVectors(this.camera.position, this.currentLookAt);
         this.spherical.setFromVector3(offset);
 

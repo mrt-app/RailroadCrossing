@@ -51,7 +51,7 @@ export class TrafficManager {
     // When direction === 1 (from +Z to -Z, South to North), drive on left-hand side (Japan traffic) -> X = -2.2
     // When direction === -1 (from -Z to +Z, North to South), drive on left-hand side -> X = 2.2
     const laneX = (direction === 1) ? -2.2 : 2.2;
-    const startZ = 65 * direction;
+    const startZ = 25 * direction;
 
     // Check if spawn point is already blocked by a car
     const isSpawnBlocked = this.vehicles.some(v =>
@@ -104,7 +104,7 @@ export class TrafficManager {
     // Clean up vehicles that exited the map
     for (let i = this.vehicles.length - 1; i >= 0; i--) {
       const v = this.vehicles[i];
-      if (Math.abs(v.group.position.z) > 75) {
+      if (Math.abs(v.group.position.z) > 28) {
         this.scene.remove(v.group);
         v.dispose(); // Free GPU VRAM & buffers
         this.vehicles.splice(i, 1);

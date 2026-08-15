@@ -56,17 +56,17 @@ export class TrainManager {
     const direction = this.trackToggle ? 1 : -1;
     const trackZ = this.trackToggle ? -2.2 : 2.2;
 
-    const startX = -90 * direction;
+    const startX = -48 * direction;
     const trainModel = new TrainModel(type, direction);
     trainModel.group.position.set(startX, 0, trackZ);
     this.scene.add(trainModel.group);
 
     // Speed setting based on train category
-    let maxSpeed = 25.0;
-    if (theme.category === 'shinkansen') maxSpeed = 34.0;
-    if (theme.category === 'express') maxSpeed = 28.0;
-    if (theme.category === 'freight') maxSpeed = 20.0;
-    if (theme.category === 'steam') maxSpeed = 18.0;
+    let maxSpeed = 22.0;
+    if (theme.category === 'shinkansen') maxSpeed = 28.0;
+    if (theme.category === 'express') maxSpeed = 24.0;
+    if (theme.category === 'freight') maxSpeed = 18.0;
+    if (theme.category === 'steam') maxSpeed = 16.0;
 
     this.activeTrain = {
       model: trainModel,
@@ -100,17 +100,17 @@ export class TrainManager {
     t.model.group.position.x = t.posX;
     t.model.rotateWheels(Math.abs(deltaDistance));
 
-    // Play horn when approaching crossing (approx 35 units away)
+    // Play horn when approaching crossing (approx 24 units away)
     if (!t.hasPlayedHorn) {
       const distToCrossing = -t.posX * t.direction;
-      if (distToCrossing <= 35 && distToCrossing > 0) {
+      if (distToCrossing <= 24 && distToCrossing > 0) {
         this.soundEngine.playTrainHorn();
         t.hasPlayedHorn = true;
       }
     }
 
-    // Check if train has completely exited the scene (beyond |X| > 95)
-    if (Math.abs(t.posX) > 95 && (t.posX * t.direction > 0)) {
+    // Check if train has completely exited the scene (beyond |X| > 50)
+    if (Math.abs(t.posX) > 50 && (t.posX * t.direction > 0)) {
       this.removeTrain();
     }
   }
