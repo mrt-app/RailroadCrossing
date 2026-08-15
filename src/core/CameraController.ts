@@ -14,7 +14,7 @@ export class CameraController {
   private isDragging: boolean = false;
   private previousMousePosition = { x: 0, y: 0 };
   private spherical: THREE.Spherical;
-  private isUserInteracting: boolean = false; // Once manually moved by fingers/mouse, camera stays locked and NEVER moves on its own
+  public isUserInteracting: boolean = false; // Once manually moved by fingers/mouse, camera stays locked and NEVER moves on its own
 
   // Touch pinch gesture tracking
   private initialPinchDistance: number = 0;
@@ -32,7 +32,7 @@ export class CameraController {
 
   public setPreset(preset: CameraPreset, immediate: boolean = false): void {
     this.currentPreset = preset;
-    this.isUserInteracting = false; // Reset manual lock when user explicitly clicks preset button
+    this.isUserInteracting = false; // Reset manual lock only when user explicitly clicks preset button
 
     switch (preset) {
       case 'overview':
@@ -134,6 +134,8 @@ export class CameraController {
           const offset = new THREE.Vector3().setFromSpherical(this.spherical);
           this.camera.position.copy(this.currentLookAt).add(offset);
           this.camera.lookAt(this.currentLookAt);
+          this.targetPosition.copy(this.camera.position);
+          this.targetLookAt.copy(this.currentLookAt);
           return;
         }
 
@@ -144,7 +146,7 @@ export class CameraController {
         const deltaX = clientX - this.previousMousePosition.x;
         const deltaY = clientY - this.previousMousePosition.y;
 
-        if (Math.abs(deltaX) > 2 || Math.abs(deltaY) > 2) {
+        if (Math.abs(deltaX) > 1 || Math.abs(deltaY) > 1) {
           this.isUserInteracting = true; // Lock position permanently to user's choice
 
           const offset = new THREE.Vector3().subVectors(this.camera.position, this.currentLookAt);
@@ -156,6 +158,8 @@ export class CameraController {
           offset.setFromSpherical(this.spherical);
           this.camera.position.copy(this.currentLookAt).add(offset);
           this.camera.lookAt(this.currentLookAt);
+          this.targetPosition.copy(this.camera.position);
+          this.targetLookAt.copy(this.currentLookAt);
         }
 
         this.previousMousePosition = { x: clientX, y: clientY };
@@ -164,7 +168,7 @@ export class CameraController {
         const deltaX = e.clientX - this.previousMousePosition.x;
         const deltaY = e.clientY - this.previousMousePosition.y;
 
-        if (Math.abs(deltaX) > 2 || Math.abs(deltaY) > 2) {
+        if (Math.abs(deltaX) > 1 || Math.abs(deltaY) > 1) {
           this.isUserInteracting = true; // Lock position permanently to user's choice
 
           const offset = new THREE.Vector3().subVectors(this.camera.position, this.currentLookAt);
@@ -176,6 +180,8 @@ export class CameraController {
           offset.setFromSpherical(this.spherical);
           this.camera.position.copy(this.currentLookAt).add(offset);
           this.camera.lookAt(this.currentLookAt);
+          this.targetPosition.copy(this.camera.position);
+          this.targetLookAt.copy(this.currentLookAt);
         }
 
         this.previousMousePosition = { x: e.clientX, y: e.clientY };
@@ -197,6 +203,8 @@ export class CameraController {
       offset.setFromSpherical(this.spherical);
       this.camera.position.copy(this.currentLookAt).add(offset);
       this.camera.lookAt(this.currentLookAt);
+      this.targetPosition.copy(this.camera.position);
+      this.targetLookAt.copy(this.currentLookAt);
     };
 
     window.addEventListener('mousedown', onPointerDown);
