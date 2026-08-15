@@ -1,0 +1,398 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  font-family: 'Zen Maru Gothic', 'Mochiy Pop One', -apple-system, BlinkMacSystemFont, 'Hiragino Kaku Gothic ProN', sans-serif;
+  background-color: #87CEEB;
+}
+
+#app {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+#canvas-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
+
+/* Header */
+.game-header {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  right: 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.title-badge {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(8px);
+  padding: 8px 16px;
+  border-radius: 999px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+  border: 3px solid #FFD13B;
+}
+
+.badge-icon {
+  font-size: 22px;
+  animation: bounce 2s infinite ease-in-out;
+}
+
+.title-text {
+  font-size: 18px;
+  font-weight: 900;
+  color: #333333;
+  letter-spacing: 0.5px;
+}
+
+.top-controls {
+  pointer-events: auto;
+  display: flex;
+  gap: 10px;
+}
+
+.icon-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(8px);
+  border: 3px solid #4CAF50;
+  border-radius: 16px;
+  padding: 6px 12px;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+  transition: transform 0.1s ease, background-color 0.2s;
+  min-width: 60px;
+}
+
+.icon-btn:active {
+  transform: scale(0.92);
+}
+
+.btn-icon {
+  font-size: 20px;
+}
+
+.btn-subtext {
+  font-size: 11px;
+  font-weight: 700;
+  color: #333;
+  margin-top: 2px;
+}
+
+/* Guide Banner */
+.guide-banner {
+  position: absolute;
+  top: 72px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  background: rgba(255, 255, 255, 0.95);
+  padding: 8px 20px;
+  border-radius: 999px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  border: 2px dashed #FF9800;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #E65100;
+  pointer-events: none;
+  animation: pulse-guide 3s infinite ease-in-out;
+  white-space: nowrap;
+}
+
+/* Footer / Action Buttons */
+.game-footer {
+  position: absolute;
+  bottom: 20px;
+  left: 14px;
+  right: 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.action-buttons-group {
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.action-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 20px;
+  border-radius: 24px;
+  border: 4px solid #ffffff;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.22);
+  transition: transform 0.12s ease, filter 0.15s ease;
+  min-width: 210px;
+  text-align: left;
+}
+
+.action-btn:active {
+  transform: scale(0.94) translateY(2px);
+}
+
+.train-btn {
+  background: linear-gradient(135deg, #FF5722 0%, #FF9800 100%);
+  color: #FFFFFF;
+}
+
+.car-btn {
+  background: linear-gradient(135deg, #2196F3 0%, #00BCD4 100%);
+  color: #FFFFFF;
+}
+
+.action-icon {
+  font-size: 32px;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+}
+
+.action-label-box {
+  display: flex;
+  flex-direction: column;
+}
+
+.action-label {
+  font-size: 17px;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+}
+
+.action-sublabel {
+  font-size: 11px;
+  font-weight: 700;
+  opacity: 0.9;
+}
+
+.sub-controls-group {
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sub-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.95);
+  border: 3px solid #9C27B0;
+  border-radius: 18px;
+  padding: 8px 14px;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+  font-weight: 900;
+  font-size: 13px;
+  color: #4A148C;
+  transition: transform 0.1s ease;
+}
+
+.horn-btn {
+  border-color: #E91E63;
+  color: #880E4F;
+}
+
+.sub-btn:active {
+  transform: scale(0.92);
+}
+
+.sub-icon {
+  font-size: 18px;
+}
+
+/* Tap Effect Layer */
+#tap-effects-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 50;
+  overflow: hidden;
+}
+
+.tap-star {
+  position: absolute;
+  pointer-events: none;
+  font-size: 24px;
+  animation: star-burst 0.7s forwards ease-out;
+  transform: translate(-50%, -50%);
+}
+
+.tap-ripple {
+  position: absolute;
+  border-radius: 50%;
+  border: 4px solid #FFEB3B;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  animation: ripple-spread 0.6s forwards ease-out;
+}
+
+/* Start Overlay */
+.start-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  transition: opacity 0.4s ease, visibility 0.4s ease;
+}
+
+.start-overlay.hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.start-card {
+  background: #FFFFFF;
+  border-radius: 32px;
+  padding: 36px 28px;
+  max-width: 380px;
+  width: 88%;
+  text-align: center;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.35);
+  border: 6px solid #FFD13B;
+  animation: card-pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.start-banner {
+  font-size: 40px;
+  margin-bottom: 12px;
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+
+.start-title {
+  font-size: 26px;
+  font-weight: 900;
+  color: #333333;
+  margin-bottom: 12px;
+}
+
+.start-desc {
+  font-size: 15px;
+  color: #555555;
+  line-height: 1.6;
+  margin-bottom: 24px;
+}
+
+.start-play-btn {
+  width: 100%;
+  padding: 16px 24px;
+  background: linear-gradient(135deg, #4CAF50 0%, #8BC34A 100%);
+  border: 4px solid #FFFFFF;
+  border-radius: 999px;
+  color: #FFFFFF;
+  font-size: 20px;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: 0 6px 20px rgba(76, 175, 80, 0.45);
+  transition: transform 0.1s ease;
+}
+
+.start-play-btn:hover {
+  transform: scale(1.03);
+}
+
+.start-play-btn:active {
+  transform: scale(0.96);
+}
+
+/* Animations */
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+@keyframes pulse-guide {
+  0%, 100% { transform: translateX(-50%) scale(1); }
+  50% { transform: translateX(-50%) scale(1.04); }
+}
+
+@keyframes star-burst {
+  0% { transform: translate(-50%, -50%) scale(0.2) rotate(0deg); opacity: 1; }
+  100% { transform: translate(-50%, -100%) scale(1.5) rotate(45deg); opacity: 0; }
+}
+
+@keyframes ripple-spread {
+  0% { width: 10px; height: 10px; opacity: 1; }
+  100% { width: 100px; height: 100px; opacity: 0; }
+}
+
+@keyframes card-pop {
+  0% { transform: scale(0.7); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@media (max-width: 600px) {
+  .title-text {
+    font-size: 15px;
+  }
+  .title-badge {
+    padding: 6px 12px;
+  }
+  .action-btn {
+    min-width: 170px;
+    padding: 8px 14px;
+  }
+  .action-icon {
+    font-size: 26px;
+  }
+  .action-label {
+    font-size: 14px;
+  }
+  .action-sublabel {
+    font-size: 10px;
+  }
+  .guide-banner {
+    font-size: 12px;
+    top: 64px;
+    padding: 6px 14px;
+  }
+}

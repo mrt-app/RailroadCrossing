@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>わくわく！3Dふみきりランド 🚃🚗</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Mochiy+Pop+One&family=Zen+Maru+Gothic:wght@700;900&display=swap" rel="stylesheet">
+  <script type="module" crossorigin src="./assets/index-DaD1ydlL.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-BnhSWMps.css">
+</head>
+<body>
+  <div id="app">
+    <!-- 3D Canvas Container -->
+    <div id="canvas-container"></div>
+
+    <!-- UI Overlay -->
+    <header class="game-header">
+      <div class="title-badge">
+        <span class="badge-icon">🚊</span>
+        <h1 class="title-text">3Dふみきりランド</h1>
+      </div>
+      <div class="top-controls">
+        <button id="btn-sound-type" class="icon-btn" title="おとの しゅるい">
+          <span class="btn-icon">🔔</span>
+          <span class="btn-subtext">ひょうじゅん</span>
+        </button>
+        <button id="btn-time" class="icon-btn" title="じかんを かえる">
+          <span class="btn-icon">☀️</span>
+          <span class="btn-subtext">ひる</span>
+        </button>
+        <button id="btn-sound" class="icon-btn" title="おと ON/OFF">
+          <span class="btn-icon">🔊</span>
+          <span class="btn-subtext">おと ON</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Interactive Tooltip / Guidance Banner -->
+    <div id="guide-banner" class="guide-banner">
+      <span class="guide-sparkle">✨</span>
+      <span id="guide-text">ふみきり や どうろ を タップしてみてね！</span>
+      <span class="guide-sparkle">✨</span>
+    </div>
+
+    <!-- Bottom Action Controls -->
+    <footer class="game-footer">
+      <div class="action-buttons-group">
+        <button id="btn-train" class="action-btn train-btn">
+          <span class="action-icon">🚃</span>
+          <div class="action-label-box">
+            <span class="action-label">でんしゃ はしる！</span>
+            <span class="action-sublabel">ふみきりタップでもOK</span>
+          </div>
+        </button>
+
+        <button id="btn-car" class="action-btn car-btn">
+          <span class="action-icon">🚗</span>
+          <div class="action-label-box">
+            <span class="action-label">くるま はしる！</span>
+            <span class="action-sublabel">どうろタップでもOK</span>
+          </div>
+        </button>
+      </div>
+
+      <div class="sub-controls-group">
+        <button id="btn-camera" class="sub-btn camera-btn">
+          <span class="sub-icon">🎥</span>
+          <span class="sub-label">カメラ</span>
+        </button>
+      </div>
+    </footer>
+
+    <!-- Tap Effect Container for Popups/Stars -->
+    <div id="tap-effects-layer"></div>
+
+    <!-- Start Overlay (AudioContext requires user gesture) -->
+    <div id="start-overlay" class="start-overlay">
+      <div class="start-card">
+        <div class="start-banner">
+          <span class="start-train">🚅</span>
+          <span class="start-crossing">⚠️</span>
+          <span class="start-car">🚓</span>
+        </div>
+        <h2 class="start-title">3Dふみきりランド</h2>
+        <p class="start-desc">
+          タップして ふみきりをならそう！<br>
+          くるまは ふみきりのまえで <strong>ぴたっ！と とまるよ！</strong>
+        </p>
+        <button id="btn-start" class="start-play-btn">
+          <span>あそぶ！ START 🚀</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>
