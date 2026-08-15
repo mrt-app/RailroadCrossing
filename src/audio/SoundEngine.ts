@@ -58,10 +58,24 @@ export class SoundEngine {
       try {
         const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
         this.ctx = new AudioCtx();
-
         this.masterGain = this.ctx.createGain();
         this.masterGain.gain.value = 1.0;
         this.masterGain.connect(this.ctx.destination);
+
+        // MediaStream Destination Bridge (Routes Web Audio through HTML5 Media Stream on iPad/iOS Safari)
+        try {
+          if (typeof this.ctx.createMediaStreamDestination === 'function') {
+            const streamDest = this.ctx.createMediaStreamDestination();
+            this.masterGain.connect(streamDest);
+            const audioEl = document.createElement('audio');
+            audioEl.setAttribute('x-webkit-airplay', 'deny');
+            audioEl.setAttribute('playsinline', 'true');
+            audioEl.srcObject = streamDest.stream;
+            audioEl.play().catch(() => {});
+          }
+        } catch {
+          // Ignore
+        }
 
         this.createAllSynchronousBuffers();
       } catch {
