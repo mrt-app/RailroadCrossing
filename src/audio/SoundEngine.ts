@@ -31,6 +31,8 @@ export class SoundEngine {
   private bufferDogBark: AudioBuffer | null = null;
   private bufferBarrierMotor: AudioBuffer | null = null;
   private soundTrainJointBuffer: AudioBuffer | null = null;
+  private bufferFruitPluck: AudioBuffer | null = null;
+  private bufferFruitDrop: AudioBuffer | null = null;
 
   constructor() {
     this.attachUserGestureUnlock();
@@ -236,6 +238,14 @@ export class SoundEngine {
     this.playBuffer(this.bufferDogBark, 0.90);
   }
 
+  public playFruitPluck(): void {
+    this.playBuffer(this.bufferFruitPluck, 0.85);
+  }
+
+  public playFruitDrop(): void {
+    this.playBuffer(this.bufferFruitDrop, 0.65);
+  }
+
   // =========================================================================
   // Synchronous Float32Array AudioBuffer Generator
   // =========================================================================
@@ -403,6 +413,23 @@ export class SoundEngine {
         sample += Math.sin(2 * Math.PI * 100 * nt) * env2 * 0.65;
       }
       return sample;
+    });
+
+    // 14. Fruit Pluck ("ぷちっ！ / ぽこっ！" Cute upward pop)
+    this.bufferFruitPluck = this.createBuffer(sr, 0.12, (t) => {
+      const f = 520 + (t / 0.12) * 440;
+      const env = Math.exp(-t * 32.0);
+      const s1 = Math.sin(2 * Math.PI * f * t);
+      const s2 = Math.sin(2 * Math.PI * f * 2 * t) * 0.3;
+      return (s1 + s2) * env * 0.85;
+    });
+
+    // 15. Fruit Drop / Bounce ("ぽとん！ / ころん" Soft impact)
+    this.bufferFruitDrop = this.createBuffer(sr, 0.15, (t) => {
+      const f = 320 - (t / 0.15) * 120;
+      const env = Math.exp(-t * 26.0);
+      const s1 = Math.sin(2 * Math.PI * f * t);
+      return s1 * env * 0.75;
     });
   }
 }

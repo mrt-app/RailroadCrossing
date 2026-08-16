@@ -6,6 +6,7 @@ import { SoundEngine } from './audio/SoundEngine';
 import { EnvironmentModel } from './models/EnvironmentModel';
 import { CrossingModel } from './models/CrossingModel';
 import { DogHouseModel } from './models/DogHouseModel';
+import { FruitTreeModel } from './models/FruitTreeModel';
 import { TrainManager } from './system/TrainManager';
 import { TrafficManager } from './system/TrafficManager';
 import { CrossingController } from './system/CrossingController';
@@ -26,6 +27,7 @@ class App {
   private envModel: EnvironmentModel;
   private crossingModel: CrossingModel;
   private dogHouseModel: DogHouseModel;
+  private fruitTreeModel: FruitTreeModel;
   private trainManager: TrainManager;
   private trafficManager: TrafficManager;
   private crossingController: CrossingController;
@@ -58,6 +60,9 @@ class App {
     this.dogHouseModel = new DogHouseModel(this.soundEngine);
     this.sceneManager.scene.add(this.dogHouseModel.group);
 
+    this.fruitTreeModel = new FruitTreeModel(this.soundEngine);
+    this.sceneManager.scene.add(this.fruitTreeModel.group);
+
     // Systems
     this.trainManager = new TrainManager(this.sceneManager.scene, this.soundEngine);
     this.trafficManager = new TrafficManager(this.sceneManager.scene, this.soundEngine);
@@ -75,6 +80,7 @@ class App {
       this.crossingModel,
       this.envModel,
       this.dogHouseModel,
+      this.fruitTreeModel,
       this.soundEngine
     );
 
@@ -143,6 +149,7 @@ class App {
     this.trainManager.update(delta);
     this.trafficManager.update(delta, isCrossingSafe);
     this.dogHouseModel.update(delta);
+    this.fruitTreeModel.update(delta);
 
     // Update Camera
     const activeTrainX = this.trainManager.activeTrain ? this.trainManager.activeTrain.posX : undefined;

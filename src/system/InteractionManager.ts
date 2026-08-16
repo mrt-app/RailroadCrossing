@@ -4,6 +4,7 @@ import { TrafficManager } from './TrafficManager';
 import { CrossingModel } from '../models/CrossingModel';
 import { EnvironmentModel } from '../models/EnvironmentModel';
 import { DogHouseModel } from '../models/DogHouseModel';
+import { FruitTreeModel, FruitItem } from '../models/FruitTreeModel';
 import { SoundEngine } from '../audio/SoundEngine';
 
 export class InteractionManager {
@@ -13,6 +14,7 @@ export class InteractionManager {
   private crossingModel: CrossingModel;
   private envModel: EnvironmentModel;
   private dogHouseModel: DogHouseModel;
+  private fruitTreeModel: FruitTreeModel;
   private soundEngine: SoundEngine;
 
   private raycaster: THREE.Raycaster;
@@ -28,6 +30,7 @@ export class InteractionManager {
     crossingModel: CrossingModel,
     envModel: EnvironmentModel,
     dogHouseModel: DogHouseModel,
+    fruitTreeModel: FruitTreeModel,
     soundEngine: SoundEngine
   ) {
     this.camera = camera;
@@ -36,6 +39,7 @@ export class InteractionManager {
     this.crossingModel = crossingModel;
     this.envModel = envModel;
     this.dogHouseModel = dogHouseModel;
+    this.fruitTreeModel = fruitTreeModel;
     this.soundEngine = soundEngine;
 
     this.raycaster = new THREE.Raycaster();
@@ -60,7 +64,45 @@ export class InteractionManager {
 
       this.raycaster.setFromCamera(this.pointer, this.camera);
 
-      // 1. Check DogHouse & Dog clickable meshes
+      // 1. Check Fruits on Trees (🍎🍊🍇)
+      const fruitIntersects = this.raycaster.intersectObjects(this.fruitTreeModel.clickableMeshes, true);
+      if (fruitIntersects.length > 0) {
+        let fruitItem: FruitItem | null = null;
+        for (const hit of fruitIntersects) {
+          if (hit.object.userData && hit.object.userData.fruitItem) {
+            fruitItem = hit.object.userData.fruitItem as FruitItem;
+            break;
+          }
+        }
+        if (fruitItem && fruitItem.state === 'hanging') {
+          this.createTapEffect(clientX, clientY, this.fruitTreeModel.getFruitEmoji(fruitItem.type));
+          const dropped = this.fruitTreeModel.dropFruit(fruitItem);
+          if (dropped) {
+            const name = this.fruitTreeModel.getFruitDisplayName(fruitItem.type);
+            this.showGuideMessage(`${name} が ぽとん！おちたよ！`);
+          }
+          return;
+        }
+      }
+
+      // 2. Check Tree Canopies (Tapping foliage drops a fruit)
+      const canopyMeshes = this.fruitTreeModel.treeCanopyMeshes.map(t => t.mesh);
+      const canopyIntersects = this.raycaster.intersectObjects(canopyMeshes, true);
+      if (canopyIntersects.length > 0) {
+        const hit = canopyIntersects[0];
+        const treeIdx = hit.object.userData?.treeIndex;
+        if (treeIdx !== undefined) {
+          const dropped = this.fruitTreeModel.dropFruitFromTree(treeIdx);
+          if (dropped) {
+            this.createTapEffect(clientX, clientY, this.fruitTreeModel.getFruitEmoji(dropped.type));
+            const name = this.fruitTreeModel.getFruitDisplayName(dropped.type);
+            this.showGuideMessage(`き を ゆすったら ${name} が おちてきた！`);
+            return;
+          }
+        }
+      }
+
+      // 3. Check DogHouse & Dog clickable meshes
       const dogHouseIntersects = this.raycaster.intersectObjects(this.dogHouseModel.clickableMeshes, true);
       if (dogHouseIntersects.length > 0) {
         this.createTapEffect(clientX, clientY, '🐶');

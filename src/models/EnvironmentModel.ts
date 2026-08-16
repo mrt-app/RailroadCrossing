@@ -334,20 +334,6 @@ export class EnvironmentModel {
   private createScenery(): void {
     const sceneryGroup = new THREE.Group();
 
-    // Low-poly Town Trees placed around crossing
-    const treePositions = [
-      { x: -11, z: -10 }, { x: -16, z: -12 },
-      { x: -18, z: 14 },  { x: -22, z: 12 },
-      { x: 12, z: 11 },   { x: 18, z: 13 },
-      { x: -22, z: 5 },   { x: -24, z: -6 }
-    ];
-
-    treePositions.forEach((pos, index) => {
-      const tree = this.createTree(index % 2 === 0);
-      tree.position.set(pos.x, 0, pos.z);
-      sceneryGroup.add(tree);
-    });
-
     // Cute Town Houses
     const houseConfigs = [
       { x: -15, z: -19, color: 0xFF7043, roof: 0xD32F2F, scale: 1.1 },
@@ -364,34 +350,6 @@ export class EnvironmentModel {
     });
 
     this.group.add(sceneryGroup);
-  }
-
-  private createTree(isRound: boolean): THREE.Group {
-    const tree = new THREE.Group();
-    const trunk = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.18, 0.24, 1.2, 6),
-      new THREE.MeshLambertMaterial({ color: 0x5D4037 })
-    );
-    trunk.position.y = 0.6;
-    tree.add(trunk);
-
-    const leafColors = [0x43A047, 0x66BB6A, 0x2E7D32];
-    const leafMat = new THREE.MeshLambertMaterial({
-      color: leafColors[Math.floor(Math.random() * leafColors.length)],
-      flatShading: true
-    });
-
-    if (isRound) {
-      const foliage = new THREE.Mesh(new THREE.DodecahedronGeometry(1.1, 1), leafMat);
-      foliage.position.y = 1.8;
-      tree.add(foliage);
-    } else {
-      const cone = new THREE.Mesh(new THREE.ConeGeometry(1.1, 1.6, 6), leafMat);
-      cone.position.y = 1.6;
-      tree.add(cone);
-    }
-
-    return tree;
   }
 
   private createHouse(wallColor: number, roofColor: number, scale: number): THREE.Group {
